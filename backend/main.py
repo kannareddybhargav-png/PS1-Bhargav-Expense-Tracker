@@ -180,5 +180,9 @@ def delete_expense(id: int, db: Session = Depends(get_db), current_user: UserDB 
     db.commit()
     return {"message": f"Deleted expense #{id}"}
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=5000, reload=True)
