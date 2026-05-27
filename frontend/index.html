@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Expense Tracker</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f5f5f0; color: #1a1a1a; padding: 2rem 1rem; }
+    .container { max-width: 860px; margin: 0 auto; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+    h1 { font-size: 24px; font-weight: 600; }
+    .status { font-size: 13px; }
+    .online { color: #0F6E56; }
+    .offline { color: #A32D2D; }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap: 12px; margin-bottom: 1.5rem; }
+    .stat { background: #fff; border-radius: 10px; padding: 1rem; border: 0.5px solid #e0e0e0; }
+    .stat-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+    .stat-value { font-size: 22px; font-weight: 600; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+    .card { background: #fff; border: 0.5px solid #e0e0e0; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
+    .card-title { font-size: 12px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem; }
+    .form-group { margin-bottom: 12px; }
+    label { display: block; font-size: 13px; color: #555; margin-bottom: 4px; }
+    input, select { width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid #ddd; font-size: 14px; font-family: inherit; outline: none; }
+    .btn { width: 100%; padding: 9px; background: #1a1a1a; color: #fff; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-family: inherit; margin-top: 4px; }
+    .btn:hover { background: #333; }
+    .btn-cancel { width: 100%; padding: 9px; background: #fff; color: #1a1a1a; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; cursor: pointer; font-family: inherit; margin-top: 6px; }
+    .btn-cancel:hover { background: #f5f5f0; }
+    .error { color: #A32D2D; font-size: 13px; margin-bottom: 10px; }
+    .expense-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 0.5px solid #f0f0f0; }
+    .badge { font-size: 11px; padding: 3px 8px; border-radius: 20px; font-weight: 600; white-space: nowrap; }
+    .exp-desc { flex: 1; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .exp-date { font-size: 12px; color: #aaa; white-space: nowrap; }
+    .exp-amt { font-size: 14px; font-weight: 600; white-space: nowrap; }
+    .action-btn { background: none; border: none; cursor: pointer; font-size: 15px; padding: 2px 4px; }
+    .action-btn:hover { opacity: 0.6; }
+    .empty { font-size: 14px; color: #aaa; text-align: center; padding: 1.5rem 0; }
+    .summary-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+    .bar-wrap { height: 6px; background: #f0f0f0; border-radius: 3px; margin-top: 4px; }
+    .bar { height: 6px; border-radius: 3px; transition: width 0.4s; }
+    .total-row { display: flex; justify-content: space-between; border-top: 1px solid #eee; padding-top: 10px; font-weight: 600; font-size: 14px; margin-top: 8px; }
+    .editing { background: #fffbe6; border: 1px solid #EF9F27 !important; }
+    .form-mode-label { font-size: 13px; color: #854F0B; background: #FAEEDA; padding: 4px 10px; border-radius: 20px; display: inline-block; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <h1>💸 Expense Tracker</h1>
+    <span class="status offline" id="status">🔴 Connecting...</span>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-label">Total Spent</div><div class="stat-value" id="stat-total">Rs 0.00</div></div>
+    <div class="stat"><div class="stat-label">Expenses</div><div class="stat-value" id="stat-count">0</div></div>
+    <div class="stat"><div class="stat-label">Categories</div><div class="stat-value" id="stat-cats">0</div></div>
+    <div class="stat"><div class="stat-label">Top Category</div><div class="stat-value" style="color:#1D9E75" id="stat-top">—</div></div>
+  </div>
+
+  <div class="grid">
+    <div class="card" id="form-card">
+      <div class="card-title" id="form-title">Add Expense</div>
+      <div id="edit-badge" style="display:none">
+        <span class="form-mode-label">✏️ Editing expense</span>
+      </div>
+      <p class="error" id="error" style="display:none"></p>
+      <div class="form-group"><label>Description</label><input id="inp-desc" placeholder="e.g. Lunch at Café"/></div>
+      <div class="form-group"><label>Amount (Rs)</label><input id="inp-amount" type="number" placeholder="0.00" min="0" step="0.01"/></div>
+      <div class="form-group">
+        <label>Category</label>
+        <select id="inp-cat">
+          <option>Food</option><option>Transport</option><option>Shopping</option>
+          <option>Bills</option><option>Health</option><option>Entertainment</option><option>Other</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Date</label><input id="inp-date" type="date"/></div>
+      <button class="btn" id="submit-btn" onclick="submitForm()">+ Add Expense</button>
+      <button class="btn-cancel" id="cancel-btn" style="display:none" onclick="cancelEdit()">Cancel</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Category Summary</div>
+      <div id="summary"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">All Expenses</div>
+    <div id="expense-list"></div>
+  </div>
+
+</div>
+
+<script>
+  const API = 'http://localhost:5000/api';
+  const CAT = {
+    Food:{bg:'#E1F5EE',text:'#0F6E56'},
+    Transport:{bg:'#E6F1FB',text:'#185FA5'},
+    Shopping:{bg:'#FBEAF0',text:'#993556'},
+    Bills:{bg:'#FAEEDA',text:'#854F0B'},
+    Health:{bg:'#EEEDFE',text:'#534AB7'},
+    Entertainment:{bg:'#FAECE7',text:'#993C1D'},
+    Other:{bg:'#F1EFE8',text:'#5F5E5A'}
+  };
+
+  let expenses = [];
+  let editingId = null;
+
+  document.getElementById('inp-date').value = new Date().toISOString().split('T')[0];
+
+  async function fetchExpenses() {
+    try {
+      const res = await fetch(API + '/expenses');
+      expenses = await res.json();
+      document.getElementById('status').textContent = '🟢 Backend connected';
+      document.getElementById('status').className = 'status online';
+    } catch {
+      document.getElementById('status').textContent = '🔴 Backend offline — run python main.py';
+      document.getElementById('status').className = 'status offline';
+    }
+    render();
+  }
+
+  function submitForm() {
+    if (editingId !== null) {
+      updateExpense();
+    } else {
+      addExpense();
+    }
+  }
+
+  async function addExpense() {
+    const desc = document.getElementById('inp-desc').value.trim();
+    const amount = parseFloat(document.getElementById('inp-amount').value);
+    const category = document.getElementById('inp-cat').value;
+    const date = document.getElementById('inp-date').value;
+    const errEl = document.getElementById('error');
+
+    if (!desc || !amount || !date) {
+      errEl.textContent = 'Please fill in all fields.';
+      errEl.style.display = 'block';
+      return;
+    }
+    errEl.style.display = 'none';
+
+    try {
+      const res = await fetch(API + '/expenses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: desc, amount, category, date })
+      });
+      const newExp = await res.json();
+      expenses.push(newExp);
+      document.getElementById('inp-desc').value = '';
+      document.getElementById('inp-amount').value = '';
+      render();
+    } catch {
+      errEl.textContent = 'Could not connect to backend.';
+      errEl.style.display = 'block';
+    }
+  }
+
+  async function updateExpense() {
+    const desc = document.getElementById('inp-desc').value.trim();
+    const amount = parseFloat(document.getElementById('inp-amount').value);
+    const category = document.getElementById('inp-cat').value;
+    const date = document.getElementById('inp-date').value;
+    const errEl = document.getElementById('error');
+
+    if (!desc || !amount || !date) {
+      errEl.textContent = 'Please fill in all fields.';
+      errEl.style.display = 'block';
+      return;
+    }
+    errEl.style.display = 'none';
+
+    try {
+      const res = await fetch(API + '/expenses/' + editingId, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: desc, amount, category, date })
+      });
+      const data = await res.json();
+      const idx = expenses.findIndex(e => e.id === editingId);
+      if (idx !== -1) expenses[idx] = data.expense;
+      cancelEdit();
+      render();
+    } catch {
+      errEl.textContent = 'Update failed.';
+      errEl.style.display = 'block';
+    }
+  }
+
+  function startEdit(id) {
+    const expense = expenses.find(e => e.id === id);
+    if (!expense) return;
+
+    editingId = id;
+    document.getElementById('inp-desc').value = expense.description;
+    document.getElementById('inp-amount').value = expense.amount;
+    document.getElementById('inp-cat').value = expense.category;
+    document.getElementById('inp-date').value = expense.date;
+
+    document.getElementById('form-title').textContent = 'Edit Expense';
+    document.getElementById('submit-btn').textContent = '✓ Save Changes';
+    document.getElementById('cancel-btn').style.display = 'block';
+    document.getElementById('edit-badge').style.display = 'block';
+    document.getElementById('form-card').classList.add('editing');
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function cancelEdit() {
+    editingId = null;
+    document.getElementById('inp-desc').value = '';
+    document.getElementById('inp-amount').value = '';
+    document.getElementById('inp-cat').value = 'Food';
+    document.getElementById('inp-date').value = new Date().toISOString().split('T')[0];
+
+    document.getElementById('form-title').textContent = 'Add Expense';
+    document.getElementById('submit-btn').textContent = '+ Add Expense';
+    document.getElementById('cancel-btn').style.display = 'none';
+    document.getElementById('edit-badge').style.display = 'none';
+    document.getElementById('form-card').classList.remove('editing');
+  }
+
+  async function deleteExpense(id) {
+    try {
+      await fetch(API + '/expenses/' + id, { method: 'DELETE' });
+      expenses = expenses.filter(e => e.id !== id);
+      if (editingId === id) cancelEdit();
+      render();
+    } catch {
+      alert('Delete failed.');
+    }
+  }
+
+  function render() {
+    const total = expenses.reduce((s, e) => s + e.amount, 0);
+    const summary = {};
+    expenses.forEach(e => { summary[e.category] = (summary[e.category] || 0) + e.amount; });
+    const topCat = Object.entries(summary).sort((a, b) => b[1] - a[1])[0];
+    const maxVal = Math.max(...Object.values(summary), 1);
+
+    document.getElementById('stat-total').textContent = 'Rs ' + total.toFixed(2);
+    document.getElementById('stat-count').textContent = expenses.length;
+    document.getElementById('stat-cats').textContent = Object.keys(summary).length;
+    document.getElementById('stat-top').textContent = topCat ? topCat[0] : '—';
+
+    const listEl = document.getElementById('expense-list');
+    if (!expenses.length) {
+      listEl.innerHTML = '<p class="empty">No expenses yet. Add one above!</p>';
+    } else {
+      listEl.innerHTML = [...expenses].reverse().map(e => `
+        <div class="expense-item">
+          <span class="badge" style="background:${CAT[e.category]?.bg||'#F1EFE8'};color:${CAT[e.category]?.text||'#5F5E5A'}">${e.category}</span>
+          <span class="exp-desc">${e.description}</span>
+          <span class="exp-date">${e.date}</span>
+          <span class="exp-amt">Rs ${(+e.amount).toFixed(2)}</span>
+          <button class="action-btn" onclick="startEdit(${e.id})" title="Edit">✏️</button>
+          <button class="action-btn" onclick="deleteExpense(${e.id})" title="Delete">🗑</button>
+        </div>`).join('');
+    }
+
+    const sumEl = document.getElementById('summary');
+    if (!Object.keys(summary).length) {
+      sumEl.innerHTML = '<p class="empty">No data yet</p>';
+    } else {
+      sumEl.innerHTML = Object.entries(summary).sort((a,b)=>b[1]-a[1]).map(([cat,amt]) => `
+        <div class="summary-row">
+          <div style="flex:1">
+            <div style="font-size:13px">${cat}</div>
+            <div class="bar-wrap"><div class="bar" style="width:${(amt/maxVal*100).toFixed(1)}%;background:${CAT[cat]?.text||'#888'}"></div></div>
+          </div>
+          <span style="font-size:13px;font-weight:600;white-space:nowrap">Rs ${amt.toFixed(2)}</span>
+        </div>`).join('') +
+        `<div class="total-row"><span>Total</span><span>Rs ${total.toFixed(2)}</span></div>`;
+    }
+  }
+
+  fetchExpenses();
+</script>
+</body>
+</html>
