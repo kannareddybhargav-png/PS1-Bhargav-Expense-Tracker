@@ -17,14 +17,13 @@ Live URL:-
 - Stays logged in for 30 days (remember me)
 - User can log expenses at any time , helps differentiate expenses of seperate periods
 
- Tech Stack:-
- Layer - Technology 
+ ##Tech Stack:-
 
- Frontend - HTML, CSS, JavaScript 
- Backend - Python, FastAPI 
- Database - PostgreSQL 
- Auth - JWT tokens, bcrypt 
- Hosting - Railway 
+ - Frontend - HTML, CSS, JavaScript
+ - Backend - Python, FastAPI 
+ - Database - PostgreSQL 
+ - Auth - JWT tokens, bcrypt 
+ - Hosting - Railway 
 
 How to Run Locally:-
 
