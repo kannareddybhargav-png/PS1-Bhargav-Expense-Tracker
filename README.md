@@ -15,6 +15,7 @@ Live URL:-
 - Persistent storage with PostgreSQL
 - Each user has their own private expense data
 - Stays logged in for 30 days (remember me)
+- User can log expenses at any time , helps differentiate expenses of seperate periods
 
  Tech Stack:-
  Layer - Technology 
