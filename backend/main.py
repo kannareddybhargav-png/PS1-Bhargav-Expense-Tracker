@@ -184,5 +184,83 @@ def delete_expense(id: int, db: Session = Depends(get_db), current_user: UserDB 
 def health():
     return {"status": "ok"}
 
+# ---------- Monthly Log Model ----------
+class MonthlyLogDB(Base):
+    __tablename__ = "monthly_logs"
+    id = Column(Integer, primary_key=True, index=True)
+    owner_id = Column(Integer, ForeignKey("users.id"))
+    month_label = Column(String)
+    snapshot = Column(String)
+    total = Column(Float)
+    created_at = Column(String)
+
+Base.metadata.create_all(bind=engine)
+
+@app.post("/api/logs/save")
+def save_monthly_log(
+    db: Session = Depends(get_db),
+    current_user: UserDB = Depends(get_current_user)
+):
+    import json
+    from datetime import datetime
+
+    expenses = db.query(ExpenseDB).filter(
+        ExpenseDB.owner_id == current_user.id
+    ).all()
+
+    if not expenses:
+        raise HTTPException(status_code=400, detail="No expenses to log")
+
+    snapshot = [
+        {
+            "description": e.description,
+            "amount": e.amount,
+            "category": e.category,
+            "date": e.date
+        }
+        for e in expenses
+    ]
+
+    total = sum(e.amount for e in expenses)
+    now = datetime.utcnow()
+    month_label = now.strftime("%B %Y")
+
+    log = MonthlyLogDB(
+        owner_id=current_user.id,
+        month_label=month_label,
+        snapshot=json.dumps(snapshot),
+        total=total,
+        created_at=now.strftime("%Y-%m-%d %H:%M:%S")
+    )
+    db.add(log)
+
+    for e in expenses:
+        db.delete(e)
+
+    db.commit()
+    db.refresh(log)
+    return {"message": f"Logged {len(snapshot)} expenses for {month_label}", "total": total}
+
+@app.get("/api/logs")
+def get_logs(
+    db: Session = Depends(get_db),
+    current_user: UserDB = Depends(get_current_user)
+):
+    import json
+    logs = db.query(MonthlyLogDB).filter(
+        MonthlyLogDB.owner_id == current_user.id
+    ).order_by(MonthlyLogDB.id.desc()).all()
+
+    return [
+        {
+            "id": log.id,
+            "month_label": log.month_label,
+            "total": log.total,
+            "created_at": log.created_at,
+            "snapshot": json.loads(log.snapshot)
+        }
+        for log in logs
+    ]
+
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=5000, reload=True)
