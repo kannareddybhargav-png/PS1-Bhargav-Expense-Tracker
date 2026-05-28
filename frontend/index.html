@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -33,8 +33,11 @@
     .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
     .header-left h1 { font-size: 24px; font-weight: 600; }
     .header-left p { font-size: 13px; color: #888; margin-top: 2px; }
+    .header-right { display: flex; gap: 8px; align-items: center; }
     .btn-logout { padding: 7px 16px; background: #fff; color: #A32D2D; border: 1px solid #f0c0c0; border-radius: 8px; font-size: 13px; cursor: pointer; font-family: inherit; }
     .btn-logout:hover { background: #FCEBEB; }
+    .btn-view-logs { padding: 7px 16px; background: #fff; color: #185FA5; border: 1px solid #b5d4f4; border-radius: 8px; font-size: 13px; cursor: pointer; font-family: inherit; }
+    .btn-view-logs:hover { background: #E6F1FB; }
     .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap: 12px; margin-bottom: 1.5rem; }
     .stat { background: #fff; border-radius: 10px; padding: 1rem; border: 0.5px solid #e0e0e0; }
     .stat-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
@@ -46,6 +49,8 @@
     .btn-add { width: 100%; padding: 9px; background: #1a1a1a; color: #fff; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-family: inherit; margin-top: 4px; }
     .btn-add:hover { background: #333; }
     .btn-cancel { width: 100%; padding: 9px; background: #fff; color: #1a1a1a; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; cursor: pointer; font-family: inherit; margin-top: 6px; }
+    .btn-log { width: 100%; padding: 9px; background: #1D9E75; color: #fff; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-family: inherit; margin-top: 8px; }
+    .btn-log:hover { background: #0F6E56; }
     .expense-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 0.5px solid #f0f0f0; }
     .badge { font-size: 11px; padding: 3px 8px; border-radius: 20px; font-weight: 600; white-space: nowrap; }
     .exp-desc { flex: 1; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -60,6 +65,15 @@
     .total-row { display: flex; justify-content: space-between; border-top: 1px solid #eee; padding-top: 10px; font-weight: 600; font-size: 14px; margin-top: 8px; }
     .editing { background: #fffbe6; border: 1px solid #EF9F27 !important; }
     .form-mode-label { font-size: 13px; color: #854F0B; background: #FAEEDA; padding: 4px 10px; border-radius: 20px; display: inline-block; margin-bottom: 10px; }
+
+    /* Logs */
+    .log-item { border: 0.5px solid #e0e0e0; border-radius: 10px; padding: 1rem; margin-bottom: 10px; }
+    .log-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+    .log-month { font-size: 15px; font-weight: 600; }
+    .log-total { font-size: 14px; color: #1D9E75; font-weight: 600; }
+    .log-date { font-size: 12px; color: #aaa; margin-bottom: 8px; }
+    .log-expense { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; border-bottom: 0.5px solid #f0f0f0; }
+    .log-toggle { font-size: 12px; color: #185FA5; cursor: pointer; margin-top: 6px; display: inline-block; }
   </style>
 </head>
 <body>
@@ -101,7 +115,10 @@
       <h1>💸 Expense Tracker</h1>
       <p id="user-email"></p>
     </div>
-    <button class="btn-logout" onclick="logout()">Sign Out</button>
+    <div class="header-right">
+      <button class="btn-view-logs" onclick="toggleLogs()">📋 View Logs</button>
+      <button class="btn-logout" onclick="logout()">Sign Out</button>
+    </div>
   </div>
 
   <div class="stats">
@@ -128,6 +145,7 @@
       <div class="form-group"><label>Date</label><input id="inp-date" type="date"/></div>
       <button class="btn-add" id="submit-btn" onclick="submitForm()">+ Add Expense</button>
       <button class="btn-cancel" id="cancel-btn" style="display:none" onclick="cancelEdit()">Cancel</button>
+      <button class="btn-log" onclick="logMonth()">📅 Log Month & Reset</button>
     </div>
 
     <div class="card">
@@ -140,6 +158,15 @@
     <div class="card-title">All Expenses</div>
     <div id="expense-list"></div>
   </div>
+
+  <div class="card" id="logs-section" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+      <div class="card-title" style="margin-bottom:0">Monthly Logs</div>
+      <button class="btn-view-logs" onclick="hideLogs()">✕ Close</button>
+    </div>
+    <div id="logs-list"></div>
+  </div>
+
 </div>
 
 <script>
@@ -156,6 +183,7 @@
 
   let expenses = [];
   let editingId = null;
+  let logsVisible = false;
   let token = localStorage.getItem('token');
   let userEmail = localStorage.getItem('userEmail');
 
@@ -186,13 +214,7 @@
     const email = document.getElementById('login-email').value.trim();
     const password = document.getElementById('login-password').value;
     const errEl = document.getElementById('login-error');
-
-    if (!email || !password) {
-      errEl.textContent = 'Please fill in all fields.';
-      errEl.classList.remove('hidden');
-      return;
-    }
-
+    if (!email || !password) { errEl.textContent = 'Please fill in all fields.'; errEl.classList.remove('hidden'); return; }
     try {
       const res = await fetch(API + '/auth/login', {
         method: 'POST',
@@ -200,21 +222,14 @@
         body: `username=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`
       });
       const data = await res.json();
-      if (!res.ok) {
-        errEl.textContent = data.detail || 'Login failed.';
-        errEl.classList.remove('hidden');
-        return;
-      }
+      if (!res.ok) { errEl.textContent = data.detail || 'Login failed.'; errEl.classList.remove('hidden'); return; }
       token = data.access_token;
       userEmail = data.email;
       localStorage.setItem('token', token);
       localStorage.setItem('userEmail', userEmail);
       errEl.classList.add('hidden');
       showApp();
-    } catch {
-      errEl.textContent = 'Could not connect to server.';
-      errEl.classList.remove('hidden');
-    }
+    } catch { errEl.textContent = 'Could not connect to server.'; errEl.classList.remove('hidden'); }
   }
 
   async function signup() {
@@ -223,23 +238,9 @@
     const confirm = document.getElementById('signup-confirm').value;
     const errEl = document.getElementById('signup-error');
     const sucEl = document.getElementById('signup-success');
-
-    if (!email || !password || !confirm) {
-      errEl.textContent = 'Please fill in all fields.';
-      errEl.classList.remove('hidden');
-      return;
-    }
-    if (password.length < 6) {
-      errEl.textContent = 'Password must be at least 6 characters.';
-      errEl.classList.remove('hidden');
-      return;
-    }
-    if (password !== confirm) {
-      errEl.textContent = 'Passwords do not match.';
-      errEl.classList.remove('hidden');
-      return;
-    }
-
+    if (!email || !password || !confirm) { errEl.textContent = 'Please fill in all fields.'; errEl.classList.remove('hidden'); return; }
+    if (password.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; errEl.classList.remove('hidden'); return; }
+    if (password !== confirm) { errEl.textContent = 'Passwords do not match.'; errEl.classList.remove('hidden'); return; }
     try {
       const res = await fetch(API + '/auth/signup', {
         method: 'POST',
@@ -247,28 +248,18 @@
         body: JSON.stringify({ email, password })
       });
       const data = await res.json();
-      if (!res.ok) {
-        errEl.textContent = data.detail || 'Signup failed.';
-        errEl.classList.remove('hidden');
-        sucEl.classList.add('hidden');
-        return;
-      }
+      if (!res.ok) { errEl.textContent = data.detail || 'Signup failed.'; errEl.classList.remove('hidden'); sucEl.classList.add('hidden'); return; }
       token = data.access_token;
       userEmail = data.email;
       localStorage.setItem('token', token);
       localStorage.setItem('userEmail', userEmail);
       errEl.classList.add('hidden');
       showApp();
-    } catch {
-      errEl.textContent = 'Could not connect to server.';
-      errEl.classList.remove('hidden');
-    }
+    } catch { errEl.textContent = 'Could not connect to server.'; errEl.classList.remove('hidden'); }
   }
 
   function logout() {
-    token = null;
-    userEmail = null;
-    expenses = [];
+    token = null; userEmail = null; expenses = [];
     localStorage.removeItem('token');
     localStorage.removeItem('userEmail');
     showLogin();
@@ -277,15 +268,11 @@
   // ---------- Expenses ----------
   async function fetchExpenses() {
     try {
-      const res = await fetch(API + '/expenses', {
-        headers: { 'Authorization': 'Bearer ' + token }
-      });
+      const res = await fetch(API + '/expenses', { headers: { 'Authorization': 'Bearer ' + token } });
       if (res.status === 401) { logout(); return; }
       expenses = await res.json();
       render();
-    } catch {
-      console.log('Could not fetch expenses');
-    }
+    } catch { console.log('Could not fetch expenses'); }
   }
 
   function submitForm() {
@@ -299,14 +286,8 @@
     const category = document.getElementById('inp-cat').value;
     const date = document.getElementById('inp-date').value;
     const errEl = document.getElementById('expense-error');
-
-    if (!desc || !amount || !date) {
-      errEl.textContent = 'Please fill in all fields.';
-      errEl.style.display = 'block';
-      return;
-    }
+    if (!desc || !amount || !date) { errEl.textContent = 'Please fill in all fields.'; errEl.style.display = 'block'; return; }
     errEl.style.display = 'none';
-
     try {
       const res = await fetch(API + '/expenses', {
         method: 'POST',
@@ -319,10 +300,7 @@
       document.getElementById('inp-desc').value = '';
       document.getElementById('inp-amount').value = '';
       render();
-    } catch {
-      errEl.textContent = 'Could not connect to server.';
-      errEl.style.display = 'block';
-    }
+    } catch { errEl.textContent = 'Could not connect to server.'; errEl.style.display = 'block'; }
   }
 
   async function updateExpense() {
@@ -331,14 +309,8 @@
     const category = document.getElementById('inp-cat').value;
     const date = document.getElementById('inp-date').value;
     const errEl = document.getElementById('expense-error');
-
-    if (!desc || !amount || !date) {
-      errEl.textContent = 'Please fill in all fields.';
-      errEl.style.display = 'block';
-      return;
-    }
+    if (!desc || !amount || !date) { errEl.textContent = 'Please fill in all fields.'; errEl.style.display = 'block'; return; }
     errEl.style.display = 'none';
-
     try {
       const res = await fetch(API + '/expenses/' + editingId, {
         method: 'PUT',
@@ -351,10 +323,7 @@
       if (idx !== -1) expenses[idx] = data.expense;
       cancelEdit();
       render();
-    } catch {
-      errEl.textContent = 'Update failed.';
-      errEl.style.display = 'block';
-    }
+    } catch { errEl.textContent = 'Update failed.'; errEl.style.display = 'block'; }
   }
 
   function startEdit(id) {
@@ -388,15 +357,81 @@
 
   async function deleteExpense(id) {
     try {
-      await fetch(API + '/expenses/' + id, {
-        method: 'DELETE',
-        headers: { 'Authorization': 'Bearer ' + token }
-      });
+      await fetch(API + '/expenses/' + id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
       expenses = expenses.filter(e => e.id !== id);
       if (editingId === id) cancelEdit();
       render();
-    } catch {
-      alert('Delete failed.');
+    } catch { alert('Delete failed.'); }
+  }
+
+  // ---------- Monthly Logs ----------
+  async function logMonth() {
+    if (!confirm('Log all current expenses and reset? This cannot be undone.')) return;
+    try {
+      const res = await fetch(API + '/logs/save', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      if (res.status === 401) { logout(); return; }
+      const data = await res.json();
+      if (!res.ok) { alert(data.detail || 'Could not log expenses.'); return; }
+      alert(`✅ ${data.message}\nTotal: Rs ${data.total.toFixed(2)}`);
+      expenses = [];
+      render();
+    } catch { alert('Could not connect to server.'); }
+  }
+
+  async function toggleLogs() {
+    if (logsVisible) hideLogs();
+    else await showLogs();
+  }
+
+  async function showLogs() {
+    try {
+      const res = await fetch(API + '/logs', { headers: { 'Authorization': 'Bearer ' + token } });
+      if (res.status === 401) { logout(); return; }
+      const logs = await res.json();
+      const logsEl = document.getElementById('logs-list');
+      if (!logs.length) {
+        logsEl.innerHTML = '<p class="empty">No logs yet. Add expenses and click "Log Month & Reset".</p>';
+      } else {
+        logsEl.innerHTML = logs.map(log => `
+          <div class="log-item">
+            <div class="log-header">
+              <span class="log-month">📅 ${log.month_label}</span>
+              <span class="log-total">Rs ${log.total.toFixed(2)}</span>
+            </div>
+            <div class="log-date">Logged on ${log.created_at}</div>
+            <span class="log-toggle" onclick="toggleLogDetail(${log.id})">▼ Show expenses (${log.snapshot.length})</span>
+            <div id="log-detail-${log.id}" style="display:none;margin-top:8px">
+              ${log.snapshot.map(e => `
+                <div class="log-expense">
+                  <span>${e.description} <span style="font-size:11px;color:#aaa">(${e.category})</span></span>
+                  <span>Rs ${(+e.amount).toFixed(2)}</span>
+                </div>`).join('')}
+            </div>
+          </div>`).join('');
+      }
+      document.getElementById('logs-section').style.display = 'block';
+      logsVisible = true;
+      document.getElementById('logs-section').scrollIntoView({ behavior: 'smooth' });
+    } catch { alert('Could not fetch logs.'); }
+  }
+
+  function hideLogs() {
+    document.getElementById('logs-section').style.display = 'none';
+    logsVisible = false;
+  }
+
+  function toggleLogDetail(id) {
+    const el = document.getElementById('log-detail-' + id);
+    const toggle = el.previousElementSibling;
+    if (el.style.display === 'none') {
+      el.style.display = 'block';
+      toggle.textContent = toggle.textContent.replace('▼ Show', '▲ Hide');
+    } else {
+      el.style.display = 'none';
+      toggle.textContent = toggle.textContent.replace('▲ Hide', '▼ Show');
     }
   }
 
@@ -445,11 +480,8 @@
   }
 
   // ---------- Init ----------
-  if (token) {
-    showApp();
-  } else {
-    showLogin();
-  }
+  if (token) showApp();
+  else showLogin();
 </script>
 </body>
 </html>
