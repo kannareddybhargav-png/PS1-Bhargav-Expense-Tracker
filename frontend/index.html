@@ -145,7 +145,7 @@
       <div class="form-group"><label>Date</label><input id="inp-date" type="date"/></div>
       <button class="btn-add" id="submit-btn" onclick="submitForm()">+ Add Expense</button>
       <button class="btn-cancel" id="cancel-btn" style="display:none" onclick="cancelEdit()">Cancel</button>
-      <button class="btn-log" onclick="logMonth()">📅 Log Month & Reset</button>
+      <button class="btn-log" onclick="logMonth()">📅 Log & Reset</button>
     </div>
 
     <div class="card">
@@ -393,7 +393,7 @@
       const logs = await res.json();
       const logsEl = document.getElementById('logs-list');
       if (!logs.length) {
-        logsEl.innerHTML = '<p class="empty">No logs yet. Add expenses and click "Log Month & Reset".</p>';
+        logsEl.innerHTML = '<p class="empty">No logs yet. Add expenses and click "Log & Reset".</p>';
       } else {
         logsEl.innerHTML = logs.map(log => `
           <div class="log-item">
