@@ -1,6 +1,6 @@
 # 💸 PS1 Bhargav Expense Tracker
 
-A full stack expense tracker web application built with FastAPI and vanilla HTML/CSS/JS.
+A full stack expense tracker web application built with FastAPI , vanilla HTML/CSS/JS.
 
 Live URL:-
 
