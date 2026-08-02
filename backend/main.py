@@ -14,6 +14,10 @@ import uvicorn
 
 app = FastAPI()
 
+@app.on_event("startup")
+def on_startup():
+    Base.metadata.create_all(bind=engine)
+
 @app.get("/debug-env")
 def debug_env():
     db_url = os.environ.get("DATABASE_URL", "NOT SET")
@@ -56,7 +60,7 @@ class ExpenseDB(Base):
     owner_id = Column(Integer, ForeignKey("users.id"))
     owner = relationship("UserDB", back_populates="expenses")
 
-Base.metadata.create_all(bind=engine)
+
 
 # ---------- Auth Setup ----------
 SECRET_KEY = os.environ.get("SECRET_KEY", "supersecretkey123")
@@ -202,7 +206,7 @@ class MonthlyLogDB(Base):
     total = Column(Float)
     created_at = Column(String)
 
-Base.metadata.create_all(bind=engine)
+
 
 @app.post("/api/logs/save")
 def save_monthly_log(
