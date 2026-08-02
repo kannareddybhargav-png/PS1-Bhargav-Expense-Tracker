@@ -14,6 +14,14 @@ import uvicorn
 
 app = FastAPI()
 
+@app.get("/debug-env")
+def debug_env():
+    db_url = os.environ.get("DATABASE_URL", "NOT SET")
+    return {
+        "database_url_set": db_url != "NOT SET",
+        "starts_with": db_url[:15] if db_url != "NOT SET" else None
+    }
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
